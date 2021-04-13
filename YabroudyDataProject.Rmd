@@ -1,0 +1,316 @@
+---
+title: "Data Project"
+author: "Hailey Yabroudy"
+output:
+  pdf_document: default
+  word_document: default
+  html_notebook: default
+---
+
+**Task: Develop plan to predict hitter performance in the next season. Project "true" average speed-off-bat for each batter in the following season.** 
+
+&nbsp;
+
+*Summary*
+
+&nbsp;
+
+I started by reviewing the data and getting a feel for it. I quickly realized that I would need to clean the data, so I started by looking for outliers within the data. I used the quantile method to measure for extreme outliers (I chose to only look for extreme ones because there were too many on the mild outliers). I then went on to measure what the "true" exit velocity was for each player. I decided to find a weighted average for each hit of the system A and B (system A having more weight) and then aggregated all of my findings based on the batter. Using those averages, I came up with a point system to help project the players performances for the coming season. The scores are based on hit types and their exit velocities. Essentially, the harder the hit, the higher the score and the hit type that would most likely yield extra bases would get more points. At the end, I summarized my findings, and printed the head of the new data frame I created, displaying the top 5 hitters that are likely to perform the best.
+
+&nbsp;
+
+*Data and Analysis*
+
+```{r}
+library(readr)
+battedBallData <- read_csv("/Users/haileyemma/Documents/JObs/Rays/battedBallData.csv")
+```
+
+```{r}
+library("dplyr", lib.loc="/Library/Frameworks/R.framework/Versions/4.0/Resources/library")
+```
+
+&nbsp;
+
+I started working on this project by exploring the data a little bit. I wanted to find the average v angle for the A and B method in order to know what hit type can be associated with what angle. 
+
+*Average v angle by hit type for A and B: *
+```{r}
+aggregate(vangle_A ~ hittype, battedBallData, mean, na.rm=TRUE)
+aggregate(vangle_B ~ hittype, battedBallData, mean, na.rm=TRUE)
+```
+
+&nbsp;
+
+I then wanted to look at the ranges of this to see where the hit type angles started and ended. This is where I quickly found out that there were outliers in the data and possibly some incorrectly labeled hit types (the -41 angle for a flyball doesn't really make sense). I decided to look a little deeper into the outliers.
+
+*Range of these angles:*
+```{r}
+aggregate(vangle_A ~ hittype, battedBallData, range, na.rm=TRUE)
+aggregate(vangle_B ~ hittype, battedBallData, range, na.rm=TRUE)
+```
+
+&nbsp;
+
+*Finding outliers for launch angles*
+
+I decided to seperate the data into subsets of data based on the hit type. Each hit type will have a different norm when it comes to launch angle, so it would only make sense to seperate them. I found the outliers for each subset of data using the quantile method for both A and B. Once I found the outliers for both, I looked to see if either list had the same event listed and if it did, I removed it from the data. If I had more time to work on this project, I would have found a way to do this using if/else statements and for loops so the code wouldn't be as repetitive as it is and it could just sweep through the data. I also decided to use extreme uppers and lowers for the quantile method because when it chose to only multiple the IQR by 1.5, it came back with too many results. 
+I used the plots below to visualize if there were any glaring outliers in the data and then did calculations to confirm if there were true outliers or not.
+
+```{r}
+flydata <- battedBallData[which(battedBallData$hittype=='fly_ball'),]
+plot(flydata$vangle_A,flydata$speed_A)
+
+lowerq = quantile(flydata$vangle_A, na.rm=TRUE)[2] 
+upperq = quantile(flydata$vangle_A, na.rm=TRUE)[4] 
+iqr = upperq - lowerq 
+extreme_upper = (iqr*3) + upperq 
+extreme_lower = lowerq - (iqr*3) 
+results <- which(flydata$vangle_A > extreme_upper | flydata$vangle_A < extreme_lower)
+results
+```
+
+
+```{r}
+plot(flydata$vangle_B,flydata$speed_B)
+
+lowerq = quantile(flydata$vangle_B, na.rm=TRUE)[2] 
+upperq = quantile(flydata$vangle_B, na.rm=TRUE)[4] 
+iqr = upperq - lowerq 
+extreme_upper = (iqr*3) + upperq 
+extreme_lower = lowerq - (iqr*3) 
+results <- which(flydata$vangle_B > extreme_upper | flydata$vangle_B < extreme_lower)
+results
+```
+
+
+```{r}
+ground <- battedBallData[which(battedBallData$hittype=='ground_ball'),]
+plot(ground$vangle_A,ground$speed_A)
+
+lowerq = quantile(ground$vangle_A, na.rm=TRUE)[2] 
+upperq = quantile(ground$vangle_A, na.rm=TRUE)[4] 
+iqr = upperq - lowerq 
+extreme_upper = (iqr*3) + upperq 
+extreme_lower = lowerq - (iqr*3) 
+results <- which(ground$vangle_A > extreme_upper | ground$vangle_A < extreme_lower)
+results
+```
+
+```{r}
+plot(ground$vangle_B,ground$speed_B)
+
+lowerq = quantile(ground$vangle_B, na.rm=TRUE)[2] 
+upperq = quantile(ground$vangle_B, na.rm=TRUE)[4] 
+iqr = upperq - lowerq 
+extreme_upper = (iqr*3) + upperq 
+extreme_lower = lowerq - (iqr*3) 
+results <- which(ground$vangle_B > extreme_upper | ground$vangle_B < extreme_lower)
+results
+```
+
+
+```{r}
+pop <- battedBallData[which(battedBallData$hittype=='popup'),]
+plot(pop$vangle_A,pop$speed_A)
+
+lowerq = quantile(pop$vangle_A, na.rm=TRUE)[2] 
+upperq = quantile(pop$vangle_A, na.rm=TRUE)[4] 
+iqr = upperq - lowerq 
+extreme_upper = (iqr*3) + upperq 
+extreme_lower = lowerq - (iqr*3) 
+results <- which(pop$vangle_A > extreme_upper | pop$vangle_A < extreme_lower)
+results
+```
+
+```{r}
+plot(pop$vangle_B,pop$speed_B)
+
+lowerq = quantile(pop$vangle_B, na.rm=TRUE)[2] 
+upperq = quantile(pop$vangle_B, na.rm=TRUE)[4] 
+iqr = upperq - lowerq 
+extreme_upper = (iqr*3) + upperq 
+extreme_lower = lowerq - (iqr*3) 
+results <- which(pop$vangle_B > extreme_upper | pop$vangle_B < extreme_lower)
+results
+```
+
+
+```{r}
+lined <- battedBallData[which(battedBallData$hittype=='line_drive'),]
+plot(lined$vangle_A,lined$speed_A)
+
+lowerq = quantile(lined$vangle_A, na.rm=TRUE)[2] 
+upperq = quantile(lined$vangle_A, na.rm=TRUE)[4] 
+iqr = upperq - lowerq 
+extreme_upper = (iqr*3) + upperq 
+extreme_lower = lowerq - (iqr*3) 
+results <- which(lined$vangle_A > extreme_upper | lined$vangle_A < extreme_lower)
+results
+```
+
+
+```{r}
+plot(lined$vangle_B,lined$speed_B)
+
+lowerq = quantile(lined$vangle_B, na.rm=TRUE)[2] 
+upperq = quantile(lined$vangle_B, na.rm=TRUE)[4] 
+iqr = upperq - lowerq 
+extreme_upper = (iqr*3) + upperq 
+extreme_lower = lowerq - (iqr*3) 
+results <- which(lined$vangle_B > extreme_upper | lined$vangle_B < extreme_lower)
+results
+```
+
+&nbsp;
+
+*Outliers for speed?*
+
+I didn't find that there were any outliers for spped, so I didn't need to do much for it.
+
+```{r}
+lowerq = quantile(battedBallData$speed_A, na.rm=TRUE)[2] 
+upperq = quantile(battedBallData$speed_A, na.rm=TRUE)[4] 
+iqr = upperq - lowerq 
+extreme_upper = (iqr*3) + upperq 
+extreme_lower = lowerq - (iqr*3) 
+results <- which(battedBallData$speed_A > extreme_upper | battedBallData$speed_A < extreme_lower)
+results
+```
+
+
+```{r}
+lowerq = quantile(battedBallData$speed_B, na.rm=TRUE)[2] 
+upperq = quantile(battedBallData$speed_B, na.rm=TRUE)[4] 
+iqr = upperq - lowerq 
+extreme_upper = (iqr*3) + upperq 
+extreme_lower = lowerq - (iqr*3) 
+results <- which(battedBallData$speed_B > extreme_upper | battedBallData$speed_B < extreme_lower)
+results
+```
+
+&nbsp;
+
+*Finding "true" average of speed-off-bat for EACH player.*
+
+I started by making a new data frame that was grouped by the batters. I found the average of each batters data from systems A and B and then I found the weighted average of those two. I chose to do a weighted average because system A has been found to be much more accurate, but I think it is still important to take system B into account. I added the "true" averages I found to the data frame that I made. 
+
+```{r}
+batters <- cbind(aggregate(.~batter, battedBallData[,-c(2,3)], mean))
+true_average <- (batters$speed_A*0.75) + (batters$speed_B*0.25)
+batters$true_average <- true_average
+```
+
+&nbsp;
+
+*Find average speed and sd for each hit type*
+```{r}
+trueav <- (battedBallData$speed_A*0.75) + (battedBallData$speed_B*0.25)
+
+hitmean <- aggregate(trueav ~ hittype, battedBallData, mean, na.rm=TRUE)
+
+hitsd <- aggregate(trueav ~ hittype, battedBallData, sd, na.rm=TRUE)
+```
+
+&nbsp;
+
+Created a data frame with the information that we will be working with.
+```{r}
+df <- data.frame(battedBallData$batter, battedBallData$hittype, battedBallData$speed_A, battedBallData$speed_B, trueav)
+df <- na.omit(df)
+df["point"] <- NA
+```
+
+&nbsp;
+
+I created a point system based on the type of hit and the exit velocity of each hit. I assigned more points for hit types based on the following order: line drives got the most, then fly balls, ground balls, and pop ups got the least amount of points. I decided to give line drives and fly balls more points because those types of hits usually lead to extra bases. Ground balls usually result in singles or outs, and pop ups are almost always outs.
+&nbsp;
+To put this scoring system into affect, I came up with a bunch of if/else statements to apply the points system based on a set of criterias. The scoring was based on how far the true averages were from the mean based on standard deviations. If it was greater than 1 standard devaition from the mean, then it would get a higher score because it was a more powerful hit. If it was higher than the mean, but not one full standard deviation higher, it was scored a little less. If it was a little less than the mean it would be a little less. Finally, if it was less than 1 standard deviation away from the mean than it would be scored the lowest because it was a weak hit.
+
+```{r}
+linemean = 91.83464
+linesd = 11.471882
+lineabove = linemean + linesd
+linebelow = linemean - linesd
+
+groundmean = 82.56772
+groundsd = 14.931219
+groundabove = groundmean + groundsd
+groundbelow = groundmean - groundsd
+
+popmean = 72.99905
+popsd = 11.323978
+popabove = popmean + popsd
+popbelow = popmean - popsd
+
+flymean = 89.12745
+flysd = 9.252213
+flyabove = flymean + flysd
+flybelow = flymean - flysd
+
+for (row in 1:nrow(df)) {
+  if(df[row, "battedBallData.hittype"] == "ground_ball"){
+    if(df[row, "trueav"] == 'NA'){
+      df[row, "point"] = 0
+    } else if(df[row, "trueav"] > groundabove){
+      df[row, "point"] = 6
+    } else if(df[row, "trueav"] > groundmean){
+      df[row, "point"] = 3
+    } else if(df[row, "trueav"] < groundbelow){
+      df[row, "point"] = 1
+    } else if(df[row, "trueav"] < groundmean){
+      df[row, "point"] = 0
+    }
+  } else if(df[row, "battedBallData.hittype"] == "line_drive"){
+    if(df[row, "trueav"] == 'NA'){
+      df[row, "point"] = 0
+    } else if(df[row, "trueav"] > lineabove){
+      df[row, "point"] = 8
+    } else if(df[row, "trueav"] > linemean){
+      df[row, "point"] = 6
+    } else if(df[row, "trueav"] < linebelow){
+      df[row, "point"] = 4
+    } else if(df[row, "trueav"] < linemean){
+      df[row, "point"] = 0
+    }
+  } else if(df[row, "battedBallData.hittype"] == "popup"){
+    if(df[row, "trueav"] == 'NA'){
+      df[row, "point"] = 0
+    } else if(df[row, "trueav"] > popabove){
+      df[row, "point"] = 4
+    } else if(df[row, "trueav"] > popmean){
+      df[row, "point"] = 2
+    } else if(df[row, "trueav"] < popbelow){
+      df[row, "point"] = 0
+    } else if(df[row, "trueav"] < popmean){
+      df[row, "point"] = 0
+    }
+  }else if(df[row, "battedBallData.hittype"] == "fly_ball"){
+    if(df[row, "trueav"] == 'NA'){
+      df[row, "point"] = 0
+    } else if(df[row, "trueav"] > flyabove){
+      df[row, "point"] = 7
+    } else if(df[row, "trueav"] > flymean){
+      df[row, "point"] = 5
+    } else if(df[row, "trueav"] < flybelow){
+      df[row, "point"] = 3
+    } else if(df[row, "trueav"] < flymean){
+      df[row, "point"] = 0
+    }
+  }
+}
+```
+
+&nbsp;
+
+After assigning a point to each hit event, I found each individual batters average score and sorted those findings into descending order. The higher the point value, the harder the batter is hitting the ball and the more consistently they are hitting the ball at an angle that produces successful outcomes. Given more time, I could get more precise on the v angle and the more I could have cleaned up the data to make sure the hits were properly tagged with the correct hit type. 
+
+&nbsp;
+
+Below are the top 5 players that are projected to perform the best.
+```{r}
+projection <- cbind(aggregate(.~battedBallData.batter, df[,-c(2, 3, 4)], mean))
+projection <- projection[order(-projection$point),]
+head(projection)
+```
+
