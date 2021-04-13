@@ -23,7 +23,7 @@ I started by reviewing the data and getting a feel for it. I quickly realized th
 
 ```{r}
 library(readr)
-battedBallData <- read_csv("/Users/haileyemma/Documents/JObs/Rays/battedBallData.csv")
+battedBallData <- read_csv("/Users/haileyemma/Documents/JObs/battedBallData.csv")
 ```
 
 ```{r}
